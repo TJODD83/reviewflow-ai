@@ -2,6 +2,54 @@
 // AI review response generator + sentiment analyzer for single-location SMBs
 
 const STORAGE_KEY = 'reviewflow_history';
+const USAGE_KEY = 'reviewflow_usage';
+const FREE_LIMIT = 3;
+
+// --- Stripe Configuration ---
+// Replace with live Stripe Payment Links when Stripe account is set up
+const STRIPE_LINKS = {
+    pro: 'https://buy.stripe.com/test_pro_placeholder',
+    business: 'https://buy.stripe.com/test_business_placeholder'
+};
+
+function startCheckout(plan) {
+    const url = STRIPE_LINKS[plan];
+    if (url.includes('placeholder')) {
+        showToast('Payments coming soon! Join the waitlist.');
+        trackWaitlist(plan);
+        return;
+    }
+    window.open(url, '_blank');
+}
+
+function trackWaitlist(plan) {
+    const waitlist = JSON.parse(localStorage.getItem('reviewflow_waitlist') || '[]');
+    waitlist.push({ plan, timestamp: new Date().toISOString() });
+    localStorage.setItem('reviewflow_waitlist', JSON.stringify(waitlist));
+}
+
+// --- Usage Tracking (Free Tier Limit) ---
+function getUsage() {
+    const data = JSON.parse(localStorage.getItem(USAGE_KEY) || '{}');
+    const now = new Date();
+    const monthKey = `${now.getFullYear()}-${now.getMonth()}`;
+    if (data.month !== monthKey) {
+        return { month: monthKey, count: 0 };
+    }
+    return data;
+}
+
+function incrementUsage() {
+    const usage = getUsage();
+    usage.count++;
+    localStorage.setItem(USAGE_KEY, JSON.stringify(usage));
+    return usage.count;
+}
+
+function canGenerate() {
+    const usage = getUsage();
+    return usage.count < FREE_LIMIT;
+}
 
 // --- Tab Navigation ---
 document.querySelectorAll('.tab').forEach(tab => {
@@ -63,6 +111,12 @@ function generateResponse() {
     const reviewText = document.getElementById('reviewText').value.trim();
     if (!reviewText) { showToast('Please paste a review first'); return; }
 
+    if (!canGenerate()) {
+        showToast(`Free limit reached (${FREE_LIMIT}/mo). Upgrade to Pro for unlimited.`);
+        document.querySelector('[data-tab="pricing"]').click();
+        return;
+    }
+
     const btn = document.getElementById('generateBtn');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Generating...';
@@ -79,6 +133,7 @@ function generateResponse() {
     setTimeout(() => {
         const response = buildResponse(reviewText, businessName, businessType, rating, tone, sentiment);
 
+        const used = incrementUsage();
         document.getElementById('responseText').textContent = response;
         document.getElementById('sentimentBadge').innerHTML =
             `<span class="sentiment-score ${sentiment.cssClass}">Sentiment: ${sentiment.label} (${Math.round(sentiment.score * 100)}%)</span>`;
@@ -93,6 +148,7 @@ function generateResponse() {
 
         btn.disabled = false;
         btn.innerHTML = 'Generate AI Response';
+        updateUsageCounter();
     }, 800 + Math.random() * 600);
 }
 
@@ -276,5 +332,17 @@ function showToast(msg) {
     setTimeout(() => toast.classList.remove('show'), 2500);
 }
 
+// --- Usage Counter Display ---
+function updateUsageCounter() {
+    const usage = getUsage();
+    const el = document.getElementById('usageCounter');
+    if (el) {
+        const remaining = Math.max(0, FREE_LIMIT - usage.count);
+        el.textContent = `${remaining}/${FREE_LIMIT} free responses left this month`;
+        if (remaining === 0) el.style.color = 'var(--danger)';
+    }
+}
+
 // Init
+updateUsageCounter();
 console.log('ReviewFlow AI loaded');

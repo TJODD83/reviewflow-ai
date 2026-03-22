@@ -339,9 +339,12 @@
                     <option value="grateful">Grateful & Enthusiastic</option>
                 </select>
             </div>
-            <button class="btn btn-primary" id="generateBtn" onclick="generateResponse()">
-                Generate AI Response
-            </button>
+            <div style="display:flex; align-items:center; gap:1rem;">
+                <button class="btn btn-primary" id="generateBtn" onclick="generateResponse()">
+                    Generate AI Response
+                </button>
+                <span id="usageCounter" style="font-size:0.85rem; color:var(--text-light);"></span>
+            </div>
         </div>
 
         <div id="responseOutput" class="card" style="display:none;">
@@ -439,7 +442,7 @@
                     <li>Custom tone templates</li>
                     <li>Keyword trend alerts</li>
                 </ul>
-                <button class="btn btn-primary" style="width:100%;">Start Free Trial</button>
+                <button class="btn btn-primary" style="width:100%;" onclick="startCheckout('pro')">Start Free Trial</button>
             </div>
             <div class="pricing-card">
                 <h3>Business</h3>
@@ -452,7 +455,7 @@
                     <li>Priority support</li>
                     <li>API access</li>
                 </ul>
-                <button class="btn btn-outline" style="width:100%;">Contact Us</button>
+                <button class="btn btn-outline" style="width:100%;" onclick="startCheckout('business')">Start Free Trial</button>
             </div>
         </div>
     </div>
