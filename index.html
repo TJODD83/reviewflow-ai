@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReviewFlow AI — Smart Review Responses for Local Businesses</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success: #16a34a;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --neutral: #64748b;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --radius: 12px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .container { max-width: 960px; margin: 0 auto; padding: 1.5rem; }
+
+        /* Hero */
+        .hero {
+            text-align: center;
+            padding: 3rem 1rem;
+            background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+            color: white;
+            border-radius: 0 0 var(--radius) var(--radius);
+            margin-bottom: 2rem;
+        }
+        .hero h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+        .hero p { opacity: 0.9; font-size: 1.1rem; max-width: 600px; margin: 0 auto; }
+        .badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 0;
+        }
+        .tab {
+            padding: 0.75rem 1.25rem;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+            color: var(--text-light);
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+        .tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+        .tab:hover { color: var(--primary); }
+
+        /* Cards */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .card h3 { margin-bottom: 0.75rem; font-size: 1.1rem; }
+
+        /* Form elements */
+        textarea, input, select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        textarea:focus, input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+        textarea { resize: vertical; min-height: 100px; }
+        label { display: block; font-weight: 500; margin-bottom: 0.35rem; font-size: 0.9rem; }
+        .form-group { margin-bottom: 1rem; }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.7rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-primary:disabled { background: #94a3b8; cursor: not-allowed; }
+        .btn-outline {
+            background: transparent;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+        .btn-outline:hover { background: rgba(37,99,235,0.05); }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+        .btn-copy { background: #f1f5f9; color: var(--text); border: 1px solid var(--border); }
+        .btn-copy:hover { background: #e2e8f0; }
+
+        /* Sentiment */
+        .sentiment-bar {
+            display: flex;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+        }
+        .sentiment-pos { background: var(--success); }
+        .sentiment-neu { background: var(--warning); }
+        .sentiment-neg { background: var(--danger); }
+        .sentiment-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+        .sentiment-score {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .sentiment-positive { background: #dcfce7; color: #15803d; }
+        .sentiment-mixed { background: #fef3c7; color: #b45309; }
+        .sentiment-negative { background: #fee2e2; color: #b91c1c; }
+
+        /* Review list */
+        .review-item {
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+        }
+        .review-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        .review-stars { color: #f59e0b; letter-spacing: 2px; }
+        .review-source { font-size: 0.8rem; color: var(--text-light); }
+        .review-text { font-size: 0.95rem; margin-bottom: 0.75rem; }
+        .review-response {
+            background: #f0f9ff;
+            border-left: 3px solid var(--primary);
+            padding: 0.75rem;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.9rem;
+        }
+        .review-response-label { font-size: 0.75rem; font-weight: 600; color: var(--primary); margin-bottom: 0.25rem; }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1rem;
+            text-align: center;
+        }
+        .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--primary); }
+        .stat-label { font-size: 0.8rem; color: var(--text-light); }
+
+        /* Loading */
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 0.75rem 1.25rem;
+            background: #1e293b;
+            color: white;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s;
+            z-index: 100;
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
+
+        /* Section visibility */
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* Pricing */
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem;
+        }
+        .pricing-card {
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .pricing-card.featured { border-color: var(--primary); position: relative; }
+        .pricing-card.featured::before {
+            content: 'MOST POPULAR';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.2rem 0.75rem;
+            border-radius: 10px;
+        }
+        .pricing-price { font-size: 2.5rem; font-weight: 700; color: var(--text); }
+        .pricing-price span { font-size: 1rem; color: var(--text-light); }
+        .pricing-features { list-style: none; text-align: left; margin: 1rem 0; font-size: 0.9rem; }
+        .pricing-features li { padding: 0.35rem 0; padding-left: 1.5rem; position: relative; }
+        .pricing-features li::before { content: '\2713'; position: absolute; left: 0; color: var(--success); font-weight: 700; }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .hero h1 { font-size: 1.5rem; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .pricing-grid { grid-template-columns: 1fr; }
+            .tabs { overflow-x: auto; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="hero">
+    <div class="badge">AI-Powered Review Management</div>
+    <h1>ReviewFlow AI</h1>
+    <p>Turn every customer review into a growth opportunity. AI-crafted responses in seconds, not hours.</p>
+</div>
+
+<div class="container">
+    <div class="tabs">
+        <button class="tab active" data-tab="respond">Respond</button>
+        <button class="tab" data-tab="dashboard">Dashboard</button>
+        <button class="tab" data-tab="history">History</button>
+        <button class="tab" data-tab="pricing">Pricing</button>
+    </div>
+
+    <!-- RESPOND TAB -->
+    <div id="respond" class="section active">
+        <div class="card">
+            <h3>Generate AI Response</h3>
+            <div class="form-group">
+                <label for="reviewSource">Review Source</label>
+                <select id="reviewSource">
+                    <option value="google">Google</option>
+                    <option value="yelp">Yelp</option>
+                    <option value="facebook">Facebook</option>
+                    <option value="tripadvisor">TripAdvisor</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="reviewRating">Star Rating</label>
+                <select id="reviewRating">
+                    <option value="5">5 Stars</option>
+                    <option value="4">4 Stars</option>
+                    <option value="3" selected>3 Stars</option>
+                    <option value="2">2 Stars</option>
+                    <option value="1">1 Star</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="businessName">Your Business Name</label>
+                <input type="text" id="businessName" placeholder="e.g., Joe's Coffee House" />
+            </div>
+            <div class="form-group">
+                <label for="businessType">Business Type</label>
+                <select id="businessType">
+                    <option value="restaurant">Restaurant / Cafe</option>
+                    <option value="salon">Salon / Spa</option>
+                    <option value="clinic">Clinic / Medical</option>
+                    <option value="trades">Trades / Services</option>
+                    <option value="retail">Retail Shop</option>
+                    <option value="fitness">Gym / Fitness</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="reviewText">Customer Review</label>
+                <textarea id="reviewText" placeholder="Paste the customer review here..."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="tone">Response Tone</label>
+                <select id="tone">
+                    <option value="professional">Professional</option>
+                    <option value="friendly">Friendly & Warm</option>
+                    <option value="apologetic">Apologetic (for negative reviews)</option>
+                    <option value="grateful">Grateful & Enthusiastic</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" id="generateBtn" onclick="generateResponse()">
+                Generate AI Response
+            </button>
+        </div>
+
+        <div id="responseOutput" class="card" style="display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                <h3>AI-Generated Response</h3>
+                <div style="display:flex; gap:0.5rem;">
+                    <button class="btn btn-copy btn-sm" onclick="copyResponse()">Copy</button>
+                    <button class="btn btn-outline btn-sm" onclick="regenerate()">Regenerate</button>
+                </div>
+            </div>
+            <div id="sentimentBadge" style="margin-bottom:0.75rem;"></div>
+            <div id="responseText" style="white-space:pre-wrap; line-height:1.7;"></div>
+            <div style="margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--border);">
+                <button class="btn btn-primary btn-sm" onclick="saveToHistory()">Save to History</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DASHBOARD TAB -->
+    <div id="dashboard" class="section">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalReviews">0</div>
+                <div class="stat-label">Total Reviews</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgRating">0.0</div>
+                <div class="stat-label">Avg Rating</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="responseRate">0%</div>
+                <div class="stat-label">Response Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="sentimentAvg">--</div>
+                <div class="stat-label">Sentiment</div>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Sentiment Overview</h3>
+            <div class="sentiment-bar" id="sentimentBar">
+                <div class="sentiment-pos" style="width:60%"></div>
+                <div class="sentiment-neu" style="width:25%"></div>
+                <div class="sentiment-neg" style="width:15%"></div>
+            </div>
+            <div class="sentiment-labels">
+                <span id="posLabel">Positive: 60%</span>
+                <span id="neuLabel">Neutral: 25%</span>
+                <span id="negLabel">Negative: 15%</span>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Top Mentioned Keywords</h3>
+            <div id="keywords" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                <span style="background:#f1f5f9; padding:0.3rem 0.7rem; border-radius:20px; font-size:0.85rem;">No data yet</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- HISTORY TAB -->
+    <div id="history" class="section">
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h3>Response History</h3>
+                <button class="btn btn-outline btn-sm" onclick="clearHistory()">Clear All</button>
+            </div>
+            <div id="historyList">
+                <p style="color:var(--text-light); text-align:center; padding:2rem;">No responses saved yet. Generate a response and save it to see it here.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRICING TAB -->
+    <div id="pricing" class="section">
+        <div class="pricing-grid">
+            <div class="pricing-card">
+                <h3>Free</h3>
+                <div class="pricing-price">$0<span>/mo</span></div>
+                <ul class="pricing-features">
+                    <li>3 AI responses per month</li>
+                    <li>Basic sentiment analysis</li>
+                    <li>1 review platform</li>
+                    <li>Copy-paste workflow</li>
+                </ul>
+                <button class="btn btn-outline" style="width:100%;">Current Plan</button>
+            </div>
+            <div class="pricing-card featured">
+                <h3>Pro</h3>
+                <div class="pricing-price">$24<span>/mo</span></div>
+                <ul class="pricing-features">
+                    <li>Unlimited AI responses</li>
+                    <li>Advanced sentiment tracking</li>
+                    <li>All review platforms</li>
+                    <li>Response history & analytics</li>
+                    <li>Custom tone templates</li>
+                    <li>Keyword trend alerts</li>
+                </ul>
+                <button class="btn btn-primary" style="width:100%;">Start Free Trial</button>
+            </div>
+            <div class="pricing-card">
+                <h3>Business</h3>
+                <div class="pricing-price">$49<span>/mo</span></div>
+                <ul class="pricing-features">
+                    <li>Everything in Pro</li>
+                    <li>Multi-location support</li>
+                    <li>Competitor review monitoring</li>
+                    <li>Monthly insights report</li>
+                    <li>Priority support</li>
+                    <li>API access</li>
+                </ul>
+                <button class="btn btn-outline" style="width:100%;">Contact Us</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
